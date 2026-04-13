@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: toasterai-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        value: https://your-app.vercel.app
+    disk:
+      name: toasterai-data
+      mountPath: /var/data
+      sizeGB: 1
