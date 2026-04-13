@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { auth } from '../config/firebase';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -7,46 +8,20 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-// Attach JWT to every request if available
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('toasterai_token');
-  if (token) {
+// Attach Firebase ID token to every request
+api.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Handle 401 globally — clear token and redirect
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('toasterai_token');
-    }
-    return Promise.reject(err);
-  }
-);
-
 // --- Auth ---
-export async function register(email, password) {
-  const { data } = await api.post('/auth/register', { email, password });
-  localStorage.setItem('toasterai_token', data.token);
-  return data;
-}
-
-export async function login(email, password) {
-  const { data } = await api.post('/auth/login', { email, password });
-  localStorage.setItem('toasterai_token', data.token);
-  return data;
-}
-
 export async function getMe() {
   const { data } = await api.get('/auth/me');
   return data;
-}
-
-export function logout() {
-  localStorage.removeItem('toasterai_token');
 }
 
 // --- Scan ---

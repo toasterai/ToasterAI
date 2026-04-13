@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Use /var/data if persistent disk exists, otherwise local path
+// Use DB_PATH env var if set, otherwise local path
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'toasterai.db');
 
 let db;
@@ -23,8 +23,8 @@ function initializeSchema() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
+      firebase_uid TEXT UNIQUE NOT NULL,
+      email TEXT NOT NULL,
       plan TEXT DEFAULT 'free',
       scans_used_today INTEGER DEFAULT 0,
       scans_limit INTEGER DEFAULT 3,
@@ -58,6 +58,7 @@ function initializeSchema() {
       FOREIGN KEY (scan_id) REFERENCES scans(id)
     );
 
+    CREATE INDEX IF NOT EXISTS idx_users_firebase ON users(firebase_uid);
     CREATE INDEX IF NOT EXISTS idx_scans_user ON scans(user_id);
     CREATE INDEX IF NOT EXISTS idx_scans_hash ON scans(image_hash);
     CREATE INDEX IF NOT EXISTS idx_scans_gallery ON scans(gallery_id);

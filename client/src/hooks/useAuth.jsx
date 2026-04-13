@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { getMe, login as apiLogin, register as apiRegister, logout as apiLogout } from '../utils/api';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { getMe } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -7,47 +14,52 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session on mount
+  // Listen to Firebase auth state
   useEffect(() => {
-    const token = localStorage.getItem('toasterai_token');
-    if (token) {
-      getMe()
-        .then((data) => setUser(data.user))
-        .catch(() => {
-          localStorage.removeItem('toasterai_token');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Fetch user profile (plan, scans, etc.) from our backend
+          const data = await getMe();
+          setUser({ ...data.user, email: firebaseUser.email });
+        } catch {
+          // Backend might not have this user yet — set basic info
+          setUser({ email: firebaseUser.email, plan: 'free', scansUsed: 0, scansLimit: 3 });
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const data = await apiLogin(email, password);
-    setUser(data.user);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const data = await getMe();
+    setUser({ ...data.user, email: cred.user.email });
     return data;
   }, []);
 
   const register = useCallback(async (email, password) => {
-    const data = await apiRegister(email, password);
-    setUser(data.user);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const data = await getMe();
+    setUser({ ...data.user, email: cred.user.email });
     return data;
   }, []);
 
-  const logout = useCallback(() => {
-    apiLogout();
+  const logout = useCallback(async () => {
+    await signOut(auth);
     setUser(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
     try {
       const data = await getMe();
-      setUser(data.user);
+      setUser((prev) => ({ ...prev, ...data.user }));
     } catch {
-      // Token expired
-      apiLogout();
-      setUser(null);
+      // If backend fails, keep current user
     }
   }, []);
 

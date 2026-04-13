@@ -26,7 +26,15 @@ export default function AuthModal({ isOpen, onClose }) {
       setPassword('');
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong. Please try again.');
+      const code = err.code;
+      const messages = {
+        'auth/invalid-credential': 'Invalid email or password.',
+        'auth/email-already-in-use': 'An account with this email already exists. Try signing in.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/too-many-requests': 'Too many attempts. Please try again later.',
+      };
+      setError(messages[code] || err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
