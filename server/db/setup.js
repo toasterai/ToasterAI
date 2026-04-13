@@ -4,10 +4,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Use persistent disk path on Render, local path in development
-const DB_PATH = process.env.NODE_ENV === 'production'
-  ? '/var/data/toasterai.db'
-  : path.join(__dirname, '..', 'toasterai.db');
+// Use /var/data if persistent disk exists, otherwise local path
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'toasterai.db');
 
 let db;
 
