@@ -23,7 +23,7 @@ export default function Home() {
                 <Shield className="w-3 h-3" />
                 AI Image Detection
               </div>
-              <h1 className="font-heading text-5xl lg:text-6xl font-bold text-toast-charcoal leading-tight mb-6">
+              <h1 className="font-heading text-5xl lg:text-6xl font-bold text-toast-charcoal leading-[1.15] mb-6 pt-2 pb-1">
                 Is your online crush{' '}
                 <span className="text-toast-gold">real?</span>
               </h1>
@@ -141,7 +141,7 @@ export default function Home() {
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, amount: 0.1, margin: '0px 0px -50px 0px' }}
                 transition={{ delay: i * 0.15 }}
                 className="text-center"
               >
@@ -184,7 +184,7 @@ export default function Home() {
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, amount: 0.1, margin: '0px 0px -50px 0px' }}
                 transition={{ delay: i * 0.1 }}
                 className="bg-toast-warmWhite rounded-2xl p-8 border border-toast-gold/10"
               >

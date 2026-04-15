@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Flame, BarChart3, CreditCard, LogIn, LogOut, Menu, X } from 'lucide-react';
+import { Flame, BarChart3, CreditCard, LogIn, LogOut, Menu, X, Globe } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import AuthModal from './AuthModal';
 import DisclaimerBanner from './DisclaimerBanner';
@@ -9,6 +9,7 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lang, setLang] = useState('en');
   const location = useLocation();
 
   const navLinks = [
@@ -18,6 +19,54 @@ export default function Layout() {
   ];
 
   const isActive = (path) => location.pathname === path;
+
+  const footerSections = [
+    {
+      title: 'Products',
+      links: [
+        { label: 'Single Scanner', to: '/scan' },
+        { label: 'Gallery Scanner', to: '/scan' },
+        { label: 'URL Scanner', to: '/scan' },
+        { label: 'Premium Crispy', to: '/pricing' },
+      ],
+    },
+    {
+      title: 'Resources',
+      links: [
+        { label: 'How It Works', to: '/' },
+        { label: 'Dashboard', to: '/dashboard' },
+        { label: 'Pricing', to: '/pricing' },
+        { label: 'Blog', href: '#' },
+      ],
+    },
+    {
+      title: 'Company',
+      links: [
+        { label: 'About', href: '#' },
+        { label: 'Careers', href: '#' },
+        { label: 'Press', href: '#' },
+        { label: 'Privacy', href: '#' },
+      ],
+    },
+    {
+      title: 'Help',
+      links: [
+        { label: 'FAQ', href: '#' },
+        { label: 'Getting Started', href: '#' },
+        { label: 'Trust & Safety', href: '#' },
+        { label: 'Report a Bug', href: '#' },
+      ],
+    },
+    {
+      title: 'Contact',
+      links: [
+        { label: 'hello@toasterai.org', href: 'mailto:hello@toasterai.org' },
+        { label: 'Support', href: '#' },
+        { label: 'Partnerships', href: '#' },
+        { label: 'Twitter / X', href: '#' },
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-toast-cream">
@@ -131,23 +180,75 @@ export default function Layout() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-toast-charcoal text-toast-cream/60 py-10">
+      <footer className="bg-toast-charcoal text-toast-cream/60 pt-14 pb-8">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🍞</span>
-              <span className="font-heading text-lg font-bold text-toast-cream">
-                Toaster<span className="text-toast-gold">AI</span>
-              </span>
+          {/* Top: brand + sections */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-10">
+            {/* Brand (spans 1 column) */}
+            <div className="col-span-2 md:col-span-1">
+              <Link to="/" className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">🍞</span>
+                <span className="font-heading text-lg font-bold text-toast-cream">
+                  Toaster<span className="text-toast-gold">AI</span>
+                </span>
+              </Link>
+              <p className="text-xs text-toast-cream/40 leading-relaxed">
+                Don't get burnt by a bot. AI image detection for the dating world.
+              </p>
             </div>
-            <div className="flex gap-8 text-sm">
-              <Link to="/scan" className="hover:text-toast-gold transition-colors">Scanner</Link>
-              <Link to="/pricing" className="hover:text-toast-gold transition-colors">Pricing</Link>
-              <Link to="/dashboard" className="hover:text-toast-gold transition-colors">Dashboard</Link>
-            </div>
-            <p className="text-xs text-toast-cream/30">&copy; {new Date().getFullYear()} ToasterAI. Don't get burnt.</p>
+
+            {/* Sections */}
+            {footerSections.map((section) => (
+              <div key={section.title}>
+                <h4 className="font-heading text-sm font-bold text-toast-cream mb-3 uppercase tracking-wider">
+                  {section.title}
+                </h4>
+                <ul className="space-y-2">
+                  {section.links.map((link) => (
+                    <li key={link.label}>
+                      {link.to ? (
+                        <Link to={link.to} className="text-xs text-toast-cream/50 hover:text-toast-gold transition-colors">
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <a href={link.href} className="text-xs text-toast-cream/50 hover:text-toast-gold transition-colors">
+                          {link.label}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-          <DisclaimerBanner className="mt-8" />
+
+          {/* Divider */}
+          <div className="border-t border-toast-cream/10 pt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <p className="text-xs text-toast-cream/30">
+              &copy; {new Date().getFullYear()} ToasterAI. All rights reserved.
+            </p>
+
+            {/* Language selector */}
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-toast-cream/40" />
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="bg-toast-charcoal border border-toast-cream/20 text-toast-cream/70 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-toast-gold cursor-pointer"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="pt">Português</option>
+                <option value="zh">中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+              </select>
+            </div>
+          </div>
+
+          <DisclaimerBanner className="mt-6" />
         </div>
       </footer>
 
