@@ -10,5 +10,21 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+let auth;
+
+try {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+} catch (err) {
+  console.error('Firebase initialization failed. Check your VITE_FIREBASE_* environment variables.', err.message);
+  // Return a stub so the app doesn't crash — auth operations will fail gracefully
+  auth = {
+    currentUser: null,
+    onAuthStateChanged: (_callback) => {
+      _callback(null); // treat as logged out
+      return () => {};
+    },
+  };
+}
+
+export { auth };

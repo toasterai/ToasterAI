@@ -18,21 +18,27 @@ export function AuthProvider({ children }) {
 
   // Listen to Firebase auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Fetch user profile (plan, scans, etc.) from our backend
-          const data = await getMe();
-          setUser({ ...data.user, email: firebaseUser.email });
-        } catch {
-          // Backend might not have this user yet — set basic info
-          setUser({ email: firebaseUser.email, plan: 'free', scansUsed: 0, scansLimit: 3 });
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          try {
+            // Fetch user profile (plan, scans, etc.) from our backend
+            const data = await getMe();
+            setUser({ ...data.user, email: firebaseUser.email });
+          } catch {
+            // Backend might not have this user yet — set basic info
+            setUser({ email: firebaseUser.email, plan: 'free', scansUsed: 0, scansLimit: 3 });
+          }
+        } else {
+          setUser(null);
         }
-      } else {
-        setUser(null);
-      }
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error('Firebase auth listener error:', err.message);
       setLoading(false);
-    });
+    }
 
     return () => unsubscribe();
   }, []);
