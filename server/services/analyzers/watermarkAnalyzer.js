@@ -88,21 +88,44 @@ export async function analyze(imageBuffer, metadata = {}) {
 
 /**
  * Search for C2PA (Content Authenticity Initiative) manifest markers.
+ * Looks for C2PA specifically within JPEG APP11 segments (0xFF 0xEB) or
+ * XMP metadata blocks — avoids false positives from random binary coincidences.
  */
 function checkC2PA(buffer) {
-  // C2PA manifests use JUMBF (ISO 19566-5) boxes with specific UUIDs
-  // The C2PA manifest store starts with: 6A756D62 (jumb) followed by UUID
-  const c2paMarkers = [
-    Buffer.from('c2pa', 'ascii'),
-    Buffer.from('jumb', 'ascii'),
-    Buffer.from('c2cl', 'ascii'), // C2PA claim
-    Buffer.from('c2cs', 'ascii'), // C2PA claim signature
-  ];
+  // Strategy 1: Look for JPEG APP11 marker (0xFF 0xEB) which is C2PA's home
+  for (let i = 0; i < buffer.length - 10; i++) {
+    if (buffer[i] === 0xFF && buffer[i + 1] === 0xEB) {
+      // Read segment length (2 bytes, big-endian)
+      const segLen = Math.min(buffer.readUInt16BE(i + 2), 65535);
+      const segment = buffer.slice(i, Math.min(i + segLen + 2, buffer.length));
+      // Within this APP11 segment, look for JUMBF/C2PA markers
+      const segStr = segment.toString('latin1');
+      if (segStr.includes('c2pa') || segStr.includes('jumb') ||
+          segStr.includes('c2cl') || segStr.includes('c2cs')) {
+        return { found: true, score: 90, offset: i };
+      }
+    }
+  }
 
-  for (const marker of c2paMarkers) {
-    const offset = buffer.indexOf(marker);
-    if (offset !== -1) {
-      return { found: true, score: 90, offset };
+  // Strategy 2: Look for C2PA inside XMP data (APP1 segment with http://ns.adobe.com/xap)
+  const xmpMarker = Buffer.from('http://ns.adobe.com/xap/', 'ascii');
+  const xmpOffset = buffer.indexOf(xmpMarker);
+  if (xmpOffset !== -1) {
+    const xmpSlice = buffer.slice(xmpOffset, Math.min(xmpOffset + 4096, buffer.length)).toString('latin1');
+    if ((xmpSlice.includes('c2pa') || xmpSlice.includes('ContentCredentials')) &&
+        (xmpSlice.includes('claim') || xmpSlice.includes('manifest') || xmpSlice.includes('assertion'))) {
+      return { found: true, score: 90, offset: xmpOffset };
+    }
+  }
+
+  // Strategy 3: PNG — look for c2pa tEXt/zTXt/iTXt chunks (after PNG signature)
+  const pngSig = Buffer.from([0x89, 0x50, 0x4E, 0x47]);
+  if (buffer.slice(0, 4).equals(pngSig)) {
+    const pngStr = buffer.toString('latin1');
+    // In PNG, C2PA is stored in a specific chunk type 'caBX' or as tEXt 'c2pa'
+    if (pngStr.includes('caBX') ||
+        (pngStr.includes('c2pa') && (pngStr.includes('manifest') || pngStr.includes('claim')))) {
+      return { found: true, score: 90, offset: 0 };
     }
   }
 

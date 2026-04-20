@@ -41,14 +41,14 @@ export async function analyzeImage(imageBuffer, options = {}) {
 
   // 3. Build results map
   const analyzerScores = {};
-  let allFindings = [];
+  const analyzerFindings = {};
 
   for (const result of analyzerResults) {
     analyzerScores[result.name] = {
       score: result.score,
       confidence: result.confidence
     };
-    allFindings = allFindings.concat(result.findings);
+    analyzerFindings[result.name] = result.findings;
   }
 
   // 4. Combine scores with weighted average
@@ -60,7 +60,35 @@ export async function analyzeImage(imageBuffer, options = {}) {
   // 6. Categorize
   const category = categorize(freshnessScore);
 
-  // 7. Enrich findings with human-readable explanations
+  // 7. Filter findings that strongly contradict the final score to avoid confusion.
+  // If the final score says "real" (<35) but a finding claims "strong AI signal",
+  // that finding came from an outlier analyzer — we downgrade or suppress it.
+  let allFindings = [];
+  for (const [name, findings] of Object.entries(analyzerFindings)) {
+    const analyzerScore = analyzerScores[name].score;
+    const scoreDelta = Math.abs(analyzerScore - freshnessScore);
+
+    for (const finding of findings) {
+      // Suppress high-severity AI findings from outlier analyzers when final score is low
+      if (
+        scoreDelta > 50 &&
+        finding.severity === 'high' &&
+        freshnessScore < 40 &&
+        analyzerScore > 70
+      ) {
+        // Downgrade the finding — it exists but is outweighed by other signals
+        allFindings.push({
+          ...finding,
+          severity: 'low',
+          humanReadable: finding.humanReadable + ' (Outweighed by other signals suggesting this is real.)'
+        });
+      } else {
+        allFindings.push(finding);
+      }
+    }
+  }
+
+  // 8. Enrich findings with human-readable explanations
   const enrichedFindings = explainFindings(allFindings);
 
   return {
